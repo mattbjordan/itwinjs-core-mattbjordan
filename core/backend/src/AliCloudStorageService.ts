@@ -66,7 +66,7 @@ export class AliCloudStorageService extends CloudStorageService {
     this._client.useBucket(id.name);
 
     if (undefined === id.resource)
-      throw new IModelError(BentleyStatus.ERROR, "blah Attribute 'resource' on CloudStorageContainerDescriptor object is undefined.");
+      throw new IModelError(BentleyStatus.ERROR, "blahh Attribute 'resource' on CloudStorageContainerDescriptor object is undefined.");
 
     const url: CloudStorageContainerUrl = {
       descriptor: this.makeDescriptor(id),
