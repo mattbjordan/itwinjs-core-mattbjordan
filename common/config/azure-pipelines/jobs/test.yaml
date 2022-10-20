@@ -5,6 +5,7 @@ trigger:
     include:
       - master
       - test-pipeline
+      - test-pipeline*
   paths:
     exclude:
       - common/changes/**/*.json
@@ -17,6 +18,7 @@ pr:
     include:
       - master
       - test-pipeline
+      - test-pipeline*
   paths:
     exclude:
       - common/changes/**/*.json
