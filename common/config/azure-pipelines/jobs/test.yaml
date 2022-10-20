@@ -1,0 +1,41 @@
+# iTwin.js Docs CI Build
+
+trigger:
+  branches:
+    include:
+      - master
+      - test-pipeline
+  paths:
+    exclude:
+      - common/changes/**/*.json
+      - "**/CHANGELOG.json"
+      - "**/CHANGELOG.md"
+
+pr:
+  drafts: true
+  branches:
+    include:
+      - master
+      - test-pipeline
+  paths:
+    exclude:
+      - common/changes/**/*.json
+      - "**/CHANGELOG.json"
+      - "**/CHANGELOG.md"
+
+jobs:
+  - job:
+    workspace:
+      clean: all
+    pool:
+      name: iModelTechCI
+      demands: Agent.OS -equals Windows_NT
+
+    steps:
+      # - checkout: self
+      #   path: itwinjs-core
+      #   clean: true
+
+      - script: |
+          echo "This is a test"
+        displayName: Echo test
