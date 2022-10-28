@@ -62,8 +62,8 @@ jobs:
             docs/**
             .github/CODEOWNERS
             common/changes/**/*.json
-            "**/CHANGELOG.json"
-            "**/CHANGELOG.md"
+            **/CHANGELOG.json
+            **/CHANGELOG.md
 
       # Fake required checks if neccessary
       - uses: LouisBrunner/checks-action@v1.3.0   # See https://github.com/marketplace/actions/github-checks
