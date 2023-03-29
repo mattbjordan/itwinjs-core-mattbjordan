@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import { expect } from "chai";
 import * as sinon from "sinon";
-import { assert, Guid, Id64 } from "@itwin/core-bentley";
+import { assert, BeDuration, BeTimePoint, Guid, Id64 } from "@itwin/core-bentley";
 import { IModelConnection, SnapshotConnection } from "@itwin/core-frontend";
 import {
   ContentFlags, ContentSpecificationTypes, DefaultContentDisplayTypes, Descriptor, DisplayValueGroup, Field, FieldDescriptor, InstanceKey, KeySet,
@@ -425,6 +425,73 @@ describe("Content", () => {
       expect(field.properties[0].property.navigationPropertyInfo?.classInfo.id).to.eq("0x40");
       expect(field.properties[0].property.navigationPropertyInfo?.targetClassInfo.id).to.eq("0x41");
 
+    });
+
+  });
+
+  describe("Instance filter", () => {
+
+    it("filters content instances using direct property", async () => {
+      const ruleset: Ruleset = {
+        id: Guid.createValue(),
+        rules: [{
+          ruleType: RuleTypes.Content,
+          specifications: [{
+            specType: ContentSpecificationTypes.ContentInstancesOfSpecificClasses,
+            classes: [{ schemaName: "PCJ_TestSchema", classNames: ["TestClass"] }],
+          }],
+        }],
+      };
+
+      const content = await Presentation.presentation.getContent({
+        imodel,
+        rulesetOrId: ruleset,
+        keys: new KeySet(),
+        descriptor: {
+          instanceFilter: {
+            selectClassName: "PCJ_TestSchema:TestClass",
+            expression: "this.String_Property_4 = \"Yoda\"",
+          },
+        },
+      });
+
+      expect(content?.contentSet.length).to.be.eq(6);
+    });
+
+    it("filters content instances using related property", async () => {
+      const ruleset: Ruleset = {
+        id: Guid.createValue(),
+        rules: [{
+          ruleType: RuleTypes.Content,
+          specifications: [{
+            specType: ContentSpecificationTypes.ContentInstancesOfSpecificClasses,
+            classes: [{ schemaName: "BisCore", classNames: ["GeometricElement3d"], arePolymorphic: true }],
+          }],
+        }],
+      };
+
+      const content = await Presentation.presentation.getContent({
+        imodel,
+        rulesetOrId: ruleset,
+        keys: new KeySet(),
+        descriptor: {
+          instanceFilter: {
+            selectClassName: "Generic:PhysicalObject",
+            expression: "related.Btu__x002F__lb__x0020____x005B__Btu__x0020__per__x0020__pound__x0020__mass__x005D__ = 1475.699",
+            relatedInstances: [{
+              pathFromSelectToPropertyClass: [{
+                sourceClassName: "Generic:PhysicalObject",
+                targetClassName: "DgnCustomItemTypes_MyProp:area__x0020__per__x0020__time__x0020__squaredElementAspect",
+                relationshipName: "BisCore:ElementOwnsMultiAspects",
+                isForwardRelationship: true,
+              }],
+              alias: "related",
+            }],
+          },
+        },
+      });
+
+      expect(content?.contentSet.length).to.be.eq(1);
     });
 
   });
@@ -1030,22 +1097,27 @@ describe("Content", () => {
 
   });
 
-  describe("when request in the backend exceeds the backend timeout time", () => {
+  describe("waits for frontend timeout when request exceeds the backend timeout time", () => {
 
     let raceStub: sinon.SinonStub<[readonly unknown[]], Promise<unknown>>;
+    const frontendTimeout = 50;
 
     beforeEach(async () => {
-      // re-initialize to set backend response timeout to 500 ms
       await closeIModel();
       await terminate();
-      await initialize(500);
+      await initialize({
+        // this defaults to 0, which means "no timeouts" - reinitialize with something else
+        backendTimeout: 1,
+        frontendTimeout,
+      });
       await openIModel();
 
       // mock `Promise.race` to always reject
       // eslint-disable-next-line @typescript-eslint/unbound-method
       const realRace = Promise.race;
+      const rejectedPromise = Promise.reject();
       raceStub = sinon.stub(Promise, "race").callsFake(async (values) => {
-        (values as any).push(new Promise((_resolve, reject) => reject("something")));
+        (values as Array<Promise<any>>).splice(0, 0, rejectedPromise);
         return realRace.call(Promise, values);
       });
     });
@@ -1066,8 +1138,10 @@ describe("Content", () => {
       const key1: InstanceKey = { id: Id64.fromString("0x1"), className: "BisCore:Subject" };
       const key2: InstanceKey = { id: Id64.fromString("0x17"), className: "BisCore:SpatialCategory" };
       const keys = new KeySet([key1, key2]);
+      const start = BeTimePoint.now();
       await expect(Presentation.presentation.getContentDescriptor({ imodel, rulesetOrId: ruleset, keys, displayType: "Grid" }))
         .to.be.eventually.rejectedWith(PresentationError).and.have.property("errorNumber", PresentationStatus.BackendTimeout);
+      expect(BeTimePoint.now().milliseconds).to.be.greaterThanOrEqual(start.plus(BeDuration.fromMilliseconds(frontendTimeout)).milliseconds);
     });
 
   });

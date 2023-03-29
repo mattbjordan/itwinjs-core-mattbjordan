@@ -63,7 +63,7 @@ export class ElectronApp {
       throw new Error("Not running under Electron");
     if (!this.isValid) {
       this._ipc = new ElectronIpc();
-      ElectronRpcManager.initializeFrontend(this._ipc, opts?.iModelApp?.rpcInterfaces);
+      ElectronRpcManager.initializeFrontend(this._ipc, opts?.iModelApp?.rpcInterfaces); // eslint-disable-line deprecation/deprecation
     }
     await NativeApp.startup(this._ipc!, opts);
   }
@@ -78,12 +78,12 @@ export class ElectronApp {
    * Call an asynchronous method in the [Electron.Dialog](https://www.electronjs.org/docs/api/dialog) interface from a previously initialized ElectronFrontend.
    * @param methodName the name of the method to call
    * @param args arguments to method
-   * @deprecated use [[dialogIpc]]
+   * @deprecated in 3.x. use [[dialogIpc]]
    */
   public static async callDialog<T extends DialogModuleMethod>(methodName: T, ...args: Parameters<Electron.Dialog[T]>) {
     return IpcApp.callIpcChannel(dialogChannel, "callDialog", methodName, ...args) as PromiseReturnType<Electron.Dialog[T]>;
   }
 
   /** Proxy object for calling methods of `Electron.Dialog` */
-  public static dialogIpc = IpcApp.makeIpcProxy<Electron.Dialog>(dialogChannel);
+  public static dialogIpc = IpcApp.makeIpcFunctionProxy<Electron.Dialog>(dialogChannel, "callDialog");
 }

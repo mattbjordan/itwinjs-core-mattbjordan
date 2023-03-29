@@ -394,7 +394,7 @@ export class Tool {
 
   private static getLocalizedKey(name: string): string | undefined {
     const key = `tools.${this.toolId}.${name}`;
-    const val = IModelApp.localization.getLocalizedStringWithNamespace(this.namespace, key);
+    const val = IModelApp.localization.getLocalizedString(key, { ns: this.namespace });
     return key === val ? undefined : val; // if translation for key doesn't exist, `translate` returns the key as the result
   }
 
@@ -817,7 +817,7 @@ export abstract class InteractiveTool extends Tool {
 
   /** Used to receive property changes from UI. Return false if there was an error applying updatedValue.
    * @see [[changeToolSettingPropertyValue]]
-   * @beta
+   * @public
    */
   public async applyToolSettingPropertyChange(_updatedValue: DialogPropertySyncItem): Promise<boolean> { return true; }
 

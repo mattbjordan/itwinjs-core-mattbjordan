@@ -46,7 +46,7 @@
         "test"
       ],
       "outFiles": [
-        "${workspaceFolder}/core/{backend,common,geometry}/lib/**/*.js"
+        "${workspaceFolder}/core/*/lib/**/*.js"
       ]
     },
     {
@@ -192,23 +192,6 @@
       ]
     },
     {
-      "name": "MapLayers Tests",
-      "presentation": {
-        "group": "0_CoreTests",
-        "order": 1
-      },
-      "cwd": "${workspaceFolder}/extensions/map-layers/",
-      "type": "pwa-node",
-      "request": "launch",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "test"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/extensions/map-layers/lib/**/*.js"
-      ]
-    },
-    {
       "name": "MapLayers Auth Tests",
       "presentation": {
         "group": "0_CoreTests",
@@ -223,6 +206,23 @@
       ],
       "outFiles": [
         "${workspaceFolder}/extensions/map-layers-auth/lib/**/*.js"
+      ]
+    },
+    {
+      "name": "MapLayers Formats Tests",
+      "presentation": {
+        "group": "0_CoreTests",
+        "order": 1
+      },
+      "cwd": "${workspaceFolder}/extensions/map-layers-formats/",
+      "type": "pwa-node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "test"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/map-layers-formats/lib/**/*.js"
       ]
     },
     { /* PARTIAL */
@@ -312,7 +312,7 @@
         "order": 3
       },
       "cwd": "${workspaceFolder}/core/geometry",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
@@ -444,127 +444,7 @@
         "${workspaceFolder}/{core,ui}/*/lib/**/*.js"
       ]
     },
-    {
-      "name": "[UI] Tests: Components React",
-      "presentation": {
-        "group": "4_UI"
-      },
-      "cwd": "${workspaceFolder}/ui/components-react",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/ui/components-react/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "lib/cjs/test/**/*.test.js"
-      ],
-      "skipFiles": [
-        "<node_internals>/**/*.js",
-        "node_modules/rxjs/**/*"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/{core,ui}/*/lib/**/*.js"
-      ]
-    },
-    {
-      "name": "[UI] Tests: Core React",
-      "presentation": {
-        "group": "4_UI"
-      },
-      "cwd": "${workspaceFolder}/ui/core-react",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/ui/core-react/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "lib/cjs/test/**/*.test.js"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/{core,ui}/*/lib/**/*.js"
-      ]
-    },
-    {
-      "name": "[UI] Tests: IModel Components React",
-      "presentation": {
-        "group": "4_UI"
-      },
-      "cwd": "${workspaceFolder}/ui/imodel-components-react",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/ui/imodel-components-react/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "lib/cjs/test/**/*.test.js"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/{core,ui}/*/lib/cjs/**/*.js"
-      ]
-    },
-    {
-      "name": "[UI] Tests: AppUi React",
-      "presentation": {
-        "group": "4_UI"
-      },
-      "cwd": "${workspaceFolder}/ui/appui-react",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/ui/appui-react/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "lib/cjs/test/**/*.test.js"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/{core,clients,ui,presentation}/*/lib/**/*.js"
-      ],
-      "outputCapture": "std"
-    },
-    {
-      "name": "[UI] Tests: ApppUi Layout React",
-      "presentation": {
-        "group": "4_UI"
-      },
-      "cwd": "${workspaceFolder}/ui/appui-layout-react",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/ui/appui-layout-react/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "lib/cjs/test/**/*.test.js"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/ui/*/lib/**/*.js"
-      ],
-      "outputCapture": "std"
-    },
     // PRESENTATION TESTS
-    {
-      "name": "[Presentation] presentation-test-app webserver",
-      "presentation": {
-        "group": "5_Presentation"
-      },
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://localhost:3000/",
-      "webRoot": "${workspaceFolder}/test-apps/presentation-test-app",
-      "sourceMapPathOverrides": {
-        // map sources from node_modules to our source directory
-        "webpack:///../frontend/*": "${workspaceFolder}test-apps/presentation-test-app/lib/frontend/*",
-        // below are default values taken from https://github.com/Microsoft/vscode-chrome-debug
-        "webpack:///./~/*": "${webRoot}/node_modules/*",
-        "webpack:///./*": "${webRoot}/*",
-        "webpack:///*": "*",
-        "webpack:///packages/*": "${webRoot}/*"
-      }
-    },
     {
       "name": "[Presentation] Tests: Backend",
       "presentation": {
@@ -582,7 +462,10 @@
       ],
       "outFiles": [
         "${workspaceFolder}/{core,presentation}/*/lib/**/*.js"
-      ]
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     {
       "name": "[Presentation] Tests: Common",
@@ -601,30 +484,10 @@
       ],
       "outFiles": [
         "${workspaceFolder}/{core,presentation}/*/lib/**/*.js"
-      ]
-    },
-    {
-      "name": "[Presentation] Tests: Components",
-      "presentation": {
-        "group": "5_Presentation"
-      },
-      "cwd": "${workspaceFolder}/presentation/components",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/presentation/components/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "-r",
-        "ignore-styles",
-        "-r",
-        "jsdom-global/register",
-        "lib/cjs/test/**/*.test.js"
       ],
-      "outFiles": [
-        "${workspaceFolder}/{core,ui,presentation}/*/lib/**/*.js"
-      ]
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     {
       "name": "[Presentation] Tests: Frontend",
@@ -645,7 +508,10 @@
       ],
       "outFiles": [
         "${workspaceFolder}/{core,clients,presentation}/*/lib/**/*.js"
-      ]
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     {
       "name": "[Presentation] Tests: Full Stack",
@@ -660,36 +526,13 @@
         "--no-config",
         "--no-timeouts"
       ],
-      "env": {
-        "NODE_ENV": "development"
-      },
       "outFiles": [
         "${workspaceFolder}/{core,clients,ui,presentation}/*/lib/**/*.js",
         "${workspaceFolder}/full-stack-tests/presentation/lib/**/*.js"
-      ]
-    },
-    {
-      "name": "[Presentation] Tests: Testing",
-      "presentation": {
-        "group": "5_Presentation"
-      },
-      "cwd": "${workspaceFolder}/presentation/testing",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/presentation/testing/node_modules/mocha/bin/_mocha",
-      "args": [
-        "--config",
-        "../.mocharc.json",
-        "--no-timeouts",
-        "-r",
-        "ignore-styles",
-        "-r",
-        "jsdom-global/register",
-        "lib/cjs/test/**/*.test.js"
       ],
-      "outFiles": [
-        "${workspaceFolder}/{core,clients,ui,presentation}/*/lib/**/*.js"
-      ]
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     // MISC
     {
@@ -910,191 +753,6 @@
     },
     // TEST APPS
     { /* PARTIAL */
-      "name": "[BACKEND] ui-test-app (electron)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/ui-test-app/",
-      "type": "pwa-node",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/test-apps/ui-test-app/node_modules/.bin/electron",
-      "runtimeArgs": [
-        "${workspaceFolder}/test-apps/ui-test-app/lib/backend/main.js",
-        "--remote-debugging-port=9223"
-      ],
-      "env": {
-        "IMJS_LOG_LEVEL": "TRACE",
-        "NODE_ENV": "development"
-      },
-      "outFiles": [
-        "${workspaceFolder}/test-apps/ui-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,presentation}/*/lib/**/*.js"
-      ],
-      "autoAttachChildProcesses": false,
-      "attachSimplePort": 0,
-      "outputCapture": "std",
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] ui-test-app (electron)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] ui-test-app (electron)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "attach",
-      "port": 9223,
-      "outFiles": [
-        "${workspaceFolder}/test-apps/ui-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,ui,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] ui-test-app (electron)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[BACKEND] ui-test-app (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/ui-test-app",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/test-apps/ui-test-app/lib/backend/main.js",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/ui-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] ui-test-app (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] ui-test-app (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://localhost:3000/",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/ui-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,ui,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] ui-test-app (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[BACKEND] appui-test-app/standalone (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/appui-test-app/standalone",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/test-apps/appui-test-app/standalone/lib/backend/main.js",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/appui-test-app/standalone/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] appui-test-app/standalone (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] appui-test-app/standalone (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://localhost:3000/",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/appui-test-app/standalone/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,ui,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] appui-test-app/standalone (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[BACKEND] appui-test-app/standalone (electron)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/appui-test-app/standalone",
-      "type": "pwa-node",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/test-apps/appui-test-app/standalone/node_modules/.bin/electron",
-      "runtimeArgs": [
-        "${workspaceFolder}/test-apps/appui-test-app/standalone/lib/backend/main.js",
-        "--remote-debugging-port=9223"
-      ],
-      "env": {
-        "IMJS_LOG_LEVEL": "TRACE",
-        "IMJS_NO_DEV_TOOLS": "1",
-        "NODE_ENV": "development"
-      },
-      "outFiles": [
-        "${workspaceFolder}/test-apps/appui-test-app/standalone/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] appui-test-app/standalone (electron)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] appui-test-app/standalone (electron)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "attach",
-      "port": 9223,
-      "outFiles": [
-        "${workspaceFolder}/test-apps/appui-test-app/standalone/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,ui,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] appui-test-app/standalone (electron)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[BACKEND] appui-test-app/connected (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/appui-test-app/connected",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/test-apps/appui-test-app/connected/lib/backend/main.js",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/appui-test-app/connected/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] appui-test-app/connected (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] appui-test-app/connected (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://localhost:3000/",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/appui-test-app/connected/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,editor,ui,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] appui-test-app/connected (chrome)"
-      ]
-    },
-    { /* PARTIAL */
       "name": "[BACKEND] display-test-app (chrome)",
       "presentation": {
         "hidden": true
@@ -1138,7 +796,7 @@
         "hidden": true
       },
       "cwd": "${workspaceFolder}/test-apps/display-test-app/",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "runtimeExecutable": "${workspaceFolder}/test-apps/display-test-app/node_modules/.bin/electron",
       "runtimeArgs": [
@@ -1150,6 +808,7 @@
         "IMJS_NO_DEV_TOOLS": "1",
         "NODE_ENV": "development"
       },
+      "envFile": "${workspaceFolder}/test-apps/display-test-app/.env",
       "outFiles": [
         "${workspaceFolder}/test-apps/display-test-app/lib/backend/**/*.js",
         "${workspaceFolder}/{core,clients,editor}/*/lib/**/*.js",
@@ -1164,7 +823,7 @@
       "presentation": {
         "hidden": true
       },
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "attach",
       "port": 9223,
       "outFiles": [
@@ -1209,79 +868,6 @@
       ],
       "cascadeTerminateToConfigurations": [
         "[BACKEND] display-performance-test-app (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[BACKEND] presentation-test-app (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/presentation-test-app",
-      "type": "pwa-node",
-      "request": "launch",
-      "program": "${workspaceFolder}/test-apps/presentation-test-app/lib/backend/main.js",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/presentation-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] presentation-test-app (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] presentation-test-app (chrome)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://localhost:3000/",
-      "outFiles": [
-        "${workspaceFolder}/test-apps/presentation-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,ui,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] presentation-test-app (chrome)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[BACKEND] presentation-test-app (electron)",
-      "presentation": {
-        "hidden": true
-      },
-      "cwd": "${workspaceFolder}/test-apps/presentation-test-app/",
-      "type": "pwa-node",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/test-apps/presentation-test-app/node_modules/.bin/electron",
-      "runtimeArgs": [
-        "${workspaceFolder}/test-apps/presentation-test-app/lib/backend/main.js",
-        "--remote-debugging-port=9223"
-      ],
-      "env": {
-        "NODE_ENV": "development"
-      },
-      "outFiles": [
-        "${workspaceFolder}/test-apps/presentation-test-app/lib/backend/**/*.js",
-        "${workspaceFolder}/{core,clients,presentation}/*/lib/**/*.js"
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[FRONTEND] presentation-test-app (electron)"
-      ]
-    },
-    { /* PARTIAL */
-      "name": "[FRONTEND] presentation-test-app (electron)",
-      "presentation": {
-        "hidden": true
-      },
-      "type": "pwa-chrome",
-      "request": "attach",
-      "port": 9223,
-      "outFiles": [
-        "${workspaceFolder}/test-apps/presentation-test-app/lib/**/*.js",
-        "${workspaceFolder}/{core,clients,ui,presentation}/*/lib/**/*.js",
-      ],
-      "cascadeTerminateToConfigurations": [
-        "[BACKEND] presentation-test-app (electron)"
       ]
     },
     // FULLSTACK TESTS
@@ -1485,20 +1071,47 @@
         "[BACKEND] Local Backend for Full Stack RPC Interface Tests"
       ]
     },
-    {
-      "name": "eslint rule test @bentley/no-internal-barrel-imports",
+    { /* PARTIAL */
+      "name": "[BACKEND] Electron Frontend Tests",
       "presentation": {
-        "group": "6_Misc"
+        "hidden": true
       },
-      "cwd": "${workspaceFolder}/tools/eslint-plugin",
+      "cwd": "${workspaceFolder}/core/electron/",
       "type": "pwa-node",
       "request": "launch",
-      "program": "${workspaceFolder}/tools/eslint-plugin/node_modules/mocha/bin/_mocha",
-      "args": [
-        "${workspaceFolder}/tools/eslint-plugin/tests/no-internal-barrel-imports.js",
-        "--timeout 50000" // for easier debugging
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "test:integration:frontend",
+        "--",
+        "--debug"
       ],
-      "console": "integratedTerminal",
+      "outFiles": [
+        "${workspaceFolder}/{core}/*/lib/**/*.js",
+        "${workspaceFolder}/tools/certa/lib/**/*.js"
+      ],
+      "outputCapture": "std",
+      "attachSimplePort": 5858, // NB: This must match ports.debugging in core/electron/src/test/frontend/utils/certa.json
+      "cascadeTerminateToConfigurations": [
+        "[FRONTEND] Electron Frontend Tests"
+      ]
+    },
+    { /* PARTIAL */
+      "name": "[FRONTEND] Electron Frontend Tests",
+      "presentation": {
+        "hidden": true
+      },
+      "type": "pwa-chrome",
+      "request": "attach",
+      "port": 9223, // NB: This must match ports.frontendDebugging in core/electron/src/test/frontend/utils/certa.json
+      "timeout": 60000,
+      "outFiles": [
+        "${workspaceFolder}/{core}/*/lib/**/*.js",
+        "${workspaceFolder}/tools/certa/lib/**/*.js"
+      ],
+      "cascadeTerminateToConfigurations": [
+        "[BACKEND] Electron Frontend Tests"
+      ]
     },
     {
       "name": "Extension API Generator",
@@ -1521,7 +1134,8 @@
       "request": "launch",
       "program": "${workspaceFolder}/core/electron/node_modules/mocha/bin/_mocha",
       "args": [
-        "lib/cjs/test/backend/RunElectronBackendTests.js"
+        "--config",
+        "src/test/backend/.mocharc.json"
       ],
       "env": {
         "NODE_ENV": "development"
@@ -1612,83 +1226,6 @@
       ]
     },
     {
-      "name": "appui-test-app/connected (chrome)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] appui-test-app/connected (chrome)",
-        "[FRONTEND] appui-test-app/connected (chrome)"
-      ]
-    },
-    {
-      "name": "appui-test-app/standalone (chrome)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] appui-test-app/standalone (chrome)",
-        "[FRONTEND] appui-test-app/standalone (chrome)"
-      ]
-    },
-    {
-      "name": "appui-test-app/standalone (electron)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] appui-test-app/standalone (electron)",
-        "[FRONTEND] appui-test-app/standalone (electron)"
-      ]
-    },
-    {
-      "name": "ui-test-app (chrome)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] ui-test-app (chrome)",
-        "[FRONTEND] ui-test-app (chrome)"
-      ]
-    },
-    {
-      "name": "ui-test-app (electron)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] ui-test-app (electron)",
-        "[FRONTEND] ui-test-app (electron)"
-      ]
-    },
-    {
-      "name": "presentation-test-app (chrome)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] presentation-test-app (chrome)",
-        "[FRONTEND] presentation-test-app (chrome)"
-      ]
-    },
-    {
-      "name": "presentation-test-app (electron)",
-      "presentation": {
-        "group": "1_TestApps",
-        "order": 1
-      },
-      "configurations": [
-        "[BACKEND] presentation-test-app (electron)",
-        "[FRONTEND] presentation-test-app (electron)"
-      ]
-    },
-    {
       "name": "Full Stack Core Tests",
       "presentation": {
         "group": "2_FullStackTests",
@@ -1753,6 +1290,16 @@
       "configurations": [
         "[NODE] Certa Test Runner for Clients Tests",
         "[BROWSER] Clients Tests"
+      ]
+    },
+    {
+      "name": "Electron Frontend Tests",
+      "presentation": {
+        "group": "0_CoreTests"
+      },
+      "configurations": [
+        "[FRONTEND] Electron Frontend Tests",
+        "[BACKEND] Electron Frontend Tests"
       ]
     },
   ],

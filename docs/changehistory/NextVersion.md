@@ -5,117 +5,147 @@ publish: false
 
 Table of contents:
 
-- [Display system](#display-system)
-  - [Reality model display customization](#reality-model-display-customization)
-- [Presentation](#presentation)
-  - [Controlling in-memory cache sizes](#controlling-in-memory-cache-sizes)
-  - [Changes to infinite hierarchy prevention](#changes-to-infinite-hierarchy-prevention)
-- [Element aspect ids](#element-aspect-ids)
-- [AppUi](#appui)
+- [Updated minimum requirements](#updated-minimum-requirements)
+  - [Node.js](#nodejs)
+  - [WebGL](#webgl)
+  - [Electron](#electron)
 - [Geometry](#geometry)
-  - [Polyface](#polyface)
-- [Deprecations](#deprecations)
-  - [@itwin/core-backend](#itwincore-backend)
-  - [@itwin/core-transformer](#itwincore-transformer)
+  - [Mesh offset](#mesh-offset)
+  - [Mesh intersection with ray](#mesh-intersection-with-ray)
+- [Display](#display)
+  - [glTF bounding boxes](#gltf-bounding-boxes)
+- [Presentation](#presentation)
+  - [Active unit system](#active-unit-system)
+  - [Hierarchy level filtering and limiting](#hierarchy-level-filtering-and-limiting)
+  - [Stopped "eating" errors on the frontend](#stopped-eating-errors-on-the-frontend)
+  - [Handling of long-running requests](#handling-of-long-running-requests)
+  - [Dependency updates](#dependency-updates)
+- [Deprecated API removals](#deprecated-api-removals)
 
-## Display system
+## Updated minimum requirements
 
-### Reality model display customization
+A new major release of iTwin.js affords us the opportunity to update our requirements to continue to provide modern, secure, and featureful libraries. Please visit our [Supported Platforms](../learning/SupportedPlatforms) documentation for a full breakdown.
 
-You can now customize various aspects of how a reality model is displayed within a [Viewport]($frontend) by applying your own [RealityModelDisplaySettings]($common) to the model. For contextual reality models, use [ContextRealityModel.displaySettings]($common); for persistent reality [Model]($backend)s, use [DisplayStyleSettings.setRealityModelDisplaySettings]($common).
+### Node.js
 
-For all types of reality models, you can customize how the model's color is mixed with a color override applied by a [FeatureAppearance]($common) or a [SpatialClassifier]($common). [RealityModelDisplaySettings.overrideColorRatio]($common) defaults to 0.5, mixing the two colors equally, but you can adjust it to any value between 0.0 (use only the model's color) and 1.0 (use only the override color).
+Node 12 reached [end-of-life](https://github.com/nodejs/release#end-of-life-releases) in 2020, and Node 14 as well as Node 16 will do so shortly. iTwin.js 4.0 requires a minimum of Node 18.12.0, though we recommend using the latest long-term-support version.
 
-Point clouds provide the following additional customizations:
+### WebGL
 
-- [PointCloudDisplaySettings.sizeMode]($common) controls how the size of each point in the cloud is computed - either as a specific radius in pixels via [PointCloudDisplaySettings.pixelSize]($common), or based on the [Tile]($frontend)'s voxel size in meters.
-- When using voxel size mode, points can be scaled using [PointCloudDisplaySettings.voxelScale]($common) and clamped to a range of pixel sizes using [PointCloudDisplaySettings.minPixelsPerVoxel]($common) and [PointCloudDisplaySettings.maxPixelsPerVoxel]($common).
-- [PointCloudDisplaySettings.shape]($common) specifies whether to draw rounded points or square points.
+Web browsers display 3d graphics using an API called [WebGL](https://en.wikipedia.org/wiki/WebGL), which comes in 2 versions: WebGL 1, released 11 years ago; and WebGL 2, released 6 years ago. WebGL 2 provides many more capabilities than WebGL 1. Because some browsers (chiefly Safari) did not provide support for WebGL 2, iTwin.js has maintained support for both versions, which imposed some limitations on the features and efficiency of its rendering system.
 
-## Presentation
+Over a year ago, support for WebGL 2 finally became [available in all major browsers](https://www.khronos.org/blog/webgl-2-achieves-pervasive-support-from-all-major-web-browsers). iTwin.js now **requires** WebGL 2 - WebGL 1 is no longer supported. This change will have no effect on most users, other than to improve their graphics performance. However, users of iOS will need to make sure they have upgraded to iOS 15 or newer to take advantage of WebGL 2 (along with the many other benefits of keeping their operating system up to date).
 
-### Controlling in-memory cache sizes
+[IModelApp.queryRenderCompatibility]($frontend) will now produce [WebGLRenderCompatibilityStatus.CannotCreateContext]($webgl-compatibility) for a client that does not support WebGL 2.
 
-The presentation library uses a number of SQLite connections, each of which have an associated in-memory page cache. Ability to control the size of these caches on the backend has been added to allow consumers fine-tune their configuration based on their memory restrictions and use cases.
+### Electron
 
-The configuration is done when initializing [Presentation]($presentation-backend) or creating a [PresentationManager]($presentation-backend):
-
-```ts
-Presentation.initialize({
-  caching: {
-    // use 8 megabytes page cache for worker connections to iModels
-    workerConnectionCacheSize: 8 * 1024 * 1024,
-    // use a disk-based hierarchy cache with a 4 megabytes in-memory page cache
-    hierarchies: {
-      mode: HierarchyCacheMode.Disk,
-      memoryCacheSize: 4 * 1024 * 1024,
-    },
-  },
-});
-```
-
-See the [Caching documentation page](../presentation/advanced/Caching.md) for more details on various caches used by presentation system.
-
-### Changes to infinite hierarchy prevention
-
-The idea of infinite hierarchy prevention is to stop producing hierarchy when we notice duplicate ancestor nodes. See more details about that in the [Infinite hierarchy prevention page](../presentation/hierarchies/InfiniteHierarchiesPrevention.md).
-
-Previously, when a duplicate node was detected, our approach to handle the situation was to just hide the duplicate node altogether. However, in some situations that turned out to be causing mismatches between what we get through a nodes count request and what we get through a nodes request (e.g. the count request returns `2`, but the nodes request returns only 1 node). There was no way to keep the count request efficient with this approach of handling infinite hierarchies.
-
-The new approach, instead of hiding the duplicate node, shows it, but without any children. This still "breaks" the hierarchy when we want that, but keeps the count and nodes in sync.
-
-#### Example
-
-Say, we have two instances A and B and they point to each other through a relationship:
-
-```
-A -> refers to -> B
-B -> refers to -> A
-```
-
-With presentation rules we can set up a hierarchy where root node is A, its child is B, whose child is again A, and so on.
-
-With previous approach the produced hierarchy "breaks" at the B node and looks like this:
-
-```
-+ A
-+--+ B
-```
-
-With the new approach we "break" at the duplicate A node:
-
-```
-+ A
-+--+ B
-   +--+ A
-```
-
-## Element aspect ids
-
-[IModelDb.Elements.insertAspect]($backend) now returns the id of the newly inserted aspect. Aspects exist in a different id space from elements, so
-the ids returned are not unique from all element ids and may collide.
-
-## AppUi
-
-### Setting allowed panel zones for widgets
-
-When defining a Widget with AbstractWidgetProperties, you can now specify on which sides of the ContentArea the it can be docked. The optional prop allowedPanelTargets is an array of any of the following: "left", "right", "top", "bottom". By default, all regions are allowed. You must specify at least one allowed target in the array.
+Electron versions from 14 to 17 reached their end-of-life last year, and for this reason, support for these versions was dropped. To be able to drop Node 16, Electron 22 was also dropped. iTwin.js now supports only Electron 23.
 
 ## Geometry
 
-### Polyface
+### Mesh offset
 
-The method [Polyface.facetCount]($core-geometry) has been added to this abstract class, with a default implementation that returns undefined. Implementers should override to return the number of facets of the mesh.
+The new static method [PolyfaceQuery.cloneOffset]($core-geometry) creates a mesh with facets offset by a given distance. The image below illustrates the basic concepts.
 
-## Deprecations
+![Offset Example 1](./assets/cloneOffsetMeshBoxes.png "Original box mesh, offset box, and chamfered offset box")
 
-### @itwin/core-backend
+At left is the original box, size 3 x 5 in the large face and 2 deep. The middle is constructed by `cloneOffset` with offset of 0.15 and default options. Note that it maintains the original sharp corners. The right box is constructed with [OffsetMeshOptions.chamferAngleBetweenNormals]($core-geometry) of 80 degrees. This specifies that when the original angle between normals of adjacent facets exceeds 80 degrees the corner should be chamfered, creating the slender chamfer faces along the edges and the triangles at the vertices. The default 120 degree chamfer threshold encourages corners to be extended to intersection rather than chamfered.
 
-The synchronous [IModelDb.Views.getViewStateData]($backend) has been deprecated in favor of [IModelDb.Views.getViewStateProps]($backend), which accepts the same inputs and returns the same output, but performs some potentially-expensive work on a background thread to avoid blocking the JavaScript event loop.
+The image below illustrates results with a more complex cross section.
 
-The [IModelCloneContext]($backend) class in `@itwin/core-backend` has been renamed to [IModelElementCloneContext]($backend) to better reflect its inability to clone non-element entities.
- The type `IModelCloneContext` is still exported from the package as an alias for `IModelElementCloneContext`. `@itwin/core-transformer` now provides a specialization of `IModelElementCloneContext` named [IModelCloneContext]($transformer).
+![Offset Example 2](./assets/cloneOffsetMeshExample2.png "Offset with sharp corners and with chamfers.")
 
-### @itwin/core-transformer
+The lower left is the original (smaller, inside) mesh with the (transparent) offset mesh around it with all sharp corners. At upper right the offset has chamfers, again due to setting the `chamferAngleBetweenNormals` to 120 degrees.
 
-[IModelTransformer.initFromExternalSourceAspects]($transformer) is deprecated and in most cases no longer needed, because the transformer now handles referencing properties on out-of-order non-element entities like aspects, models, and relationships. If you are not using a method like `processAll` or `processChanges` to run the transformer, then you do need to replace `initFromExternalSourceAspects` with [IModelTransformer.initialize]($transformer).
+### Mesh intersection with ray
+
+New functionality computes the intersection(s) of a [Ray3d]($core-geometry) with a [Polyface]($core-geometry). By default, [PolyfaceQuery.intersectRay3d]($core-geometry) returns a [FacetLocationDetail]($core-geometry) for the first found facet that intersects the infinite line parameterized by the ray. A callback can be specified in the optional [FacetIntersectOptions]($core-geometry) parameter to customize intersection processing, e.g., to filter and collect multiple intersections. Other options control whether to populate the returned detail with interpolated auxiliary vertex data: normals, uv parameters, colors, and/or the barycentric scale factors used to interpolate such data.
+
+There is also new support for intersecting a `Ray3d` with a triangle or a polygon. [BarycentricTriangle.intersectRay3d]($core-geometry) and [BarycentricTriangle.intersectSegment]($core-geometry) return a [TriangleLocationDetail]($core-geometry) for the intersection point of the plane of the triangle with the infinite line parameterized by a ray or segment. Similarly, [PolygonOps.intersectRay3d]($core-geometry) returns a [PolygonLocationDetail]($core-geometry) for the intersection point in the plane of the polygon. Both returned detail objects contain properties classifying where the intersection point lies with respect to the triangle/polygon, including `isInsideOrOn` and closest edge data.
+
+### Abstract base class [Plane3d]($core-geometry)
+
+A new abstract base class [Plane3d]($core-geometry) is defined to provide shared queries and enforce method names in multiple classes that act as 3D "planes" with various representations.
+
+- The following classes now declare that they _extend_ [Plane3d]($core-geometry):
+  - [Plane3dByOriginAndUnitNormal]($core-geometry) extends [Plane3d]($core-geometry)
+  - [Plane3dByOriginAndVectors]($core-geometry) extends [Plane3d]($core-geometry)
+  - [Point4d]($core-geometry) extends [Plane3d]($core-geometry)
+  - [ClipPlane]($core-geometry) extends [Plane3d]($core-geometry)
+
+This will provide more consistency and functionality than previously provided by the _interface_ [PlaneAltitudeEvaluator]($core-geometry).   API compatibility with the weaker [PlaneAltitudeEvaluator]($core-geometry) is maintained as follows:
+
+- The abstract base class [Plane3d]($core-geometry) declares that it implements the [PlaneAltitudeEvaluator]($core-geometry).
+- Classes that _extend_ [Plane3d]($core-geometry) inherit the _extended_ declaration of the base class (compatibility "by interface name").
+- Classes that _extend_ [Plane3d]($core-geometry) inherit the various _abstract_ method obligations and (non-abstract) method implementations from the base class (compatibility "by collected list of methods").
+
+With these changes the [PlaneAltitudeEvaluator]($core-geometry) can be deprecated.
+
+## Display
+
+### glTF bounding boxes
+
+The existing [readGltfGraphics]($frontend) function returns an opaque [RenderGraphic]($frontend). A new [readGltf]($frontend) function has been added that produces a [GltfGraphic]($frontend) that - in addition to the `RenderGraphic` - includes the bounding boxes of the glTF model in local and world coordinates.
+
+## Presentation
+
+### Active unit system
+
+[PresentationManager]($presentation-frontend) has a way to set active unit system either through props when initializing ([PresentationManagerProps.activeUnitSystem]($presentation-frontend)) or directly through a setter ([PresentationManager.activeUnitSystem]($presentation-frontend)). Both of these ways have been deprecated in favor of using [QuantityFormatter.activeUnitSystem]($core-frontend) (access `QuantityFormatter` through `IModelApp.quantityFormatter`) to avoid asking consumers set the active unit system in two places. For the time being, while we keep the deprecated unit system setters on the presentation manager, they act as an override to [QuantityFormatter.activeUnitSystem]($core-frontend), but the latter is now used by default, so setting active unit system on presentation manager is not necessary any more.
+
+### Hierarchy level filtering and limiting
+
+Two new features have been made available to help working with very large hierarchies - hierarchy level filtering and limiting. Filtering was already available since `3.6` and has been promoted to `@beta`, limiting has been newly added as `@beta`. See [hierarchy filtering and limiting page](../presentation/hierarchies/FilteringLimiting.md) for more details.
+
+### Stopped "eating" errors on the frontend
+
+The [PresentationManager]($presentation-frontend) used to "eat" errors and return default value instead of re-throwing and exposing them to consumers. This made it impossible for consumer code to know that an error occurred, which could cause it to make wrong decisions. The decision has been re-considered and now Presentation manager lets consumers catch the errors. This affects the following APIs:
+
+- [PresentationManager.getNodes]($presentation-frontend)
+- [PresentationManager.getNodesAndCount]($presentation-frontend)
+- [PresentationManager.getContent]($presentation-frontend)
+- [PresentationManager.getContentAndSize]($presentation-frontend)
+- [PresentationManager.getPagedDistinctValues]($presentation-frontend)
+- [PresentationManager.getDisplayLabelDefinitions]($presentation-frontend)
+
+Consumers of these APIs should make sure they're wrapped with try/catch blocks and the errors are handled appropriately.
+
+### Handling of long-running requests
+
+The timeouts' strategy used for Presentation RPC has been changed.
+
+Previously, the backend would return a "timeout" status if creating the response took more than 90 seconds (or as configured through [PresentationPropsBase.requestTimeout]($presentation-backend)). The frontend, upon receiving such a status, would repeat the request 5 times before propagating the timeout to the requestor on the frontend. This means that changing the timeout on the backend affects how long in total the frontend waits. By default that was 5 times 90 seconds, so 7.5 minutes in total.
+
+Now, the two timeout configs on the backend and the frontend have been separated. The timeout on the frontend is set through [PresentationManagerProps.requestTimeout]($presentation-frontend) and defaults to 10 minutes. Presentation manager will repeat the RPC request as many times as needed to wait at least 10 minutes until returning the "timeout" response to the requestor. With this change the timeout configuration on the backend becomes less important as it merely affects how often the frontend will have to repeat the request. It can still be changed through [PresentationPropsBase.requestTimeout]($presentation-backend), but the default value has been reduced to 5 seconds.
+
+### Dependency updates
+
+In addition to upgrading iTwin.js core dependencies to `4.0`, there are some other notable upgrades:
+
+- Support for React 18 (keep support of React 17 too).
+- Upgrade [iTwinUI](https://github.com/iTwin/iTwinUI) from v1 to v2.
+
+### Deprecated API removals
+
+The following previously-deprecated APIs have been removed:
+
+**@itwin/core-backend**:
+- `AliCloudStorageService`
+- `AliCloudStorageServiceCredentials`
+- `AzureBlobStorage`
+- `CloudStorageService`
+- `CloudStorageTileUploader`
+- `CloudStorageUploadOptions`
+- `tileCacheService` property of [IModelHost]($backend), [IModelHostOptions]($backend), and [IModelHostConfiguration]($backend)
+- `IModelHost.tileUploader`
+
+**@itwin/core-common**:
+- `CloudStorageCache`
+- `CloudStorageContainerDescriptor`
+- `CloudStorageContainerUrl`
+- `CloudStorageProvider`
+- `CloudStorageTileCache`
+- `IModelTileRpcInterface.getTileCacheContainerUrl`
+- `IModelTileRpcInterface.isUsingExternalTileCache`
+

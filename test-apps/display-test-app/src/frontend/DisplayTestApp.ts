@@ -4,11 +4,15 @@
 *--------------------------------------------------------------------------------------------*/
 import { Logger, LogLevel, ProcessDetector } from "@itwin/core-bentley";
 import { RpcConfiguration } from "@itwin/core-common";
-import { IModelApp, IModelConnection, RenderDiagnostics, RenderSystem, TileAdmin } from "@itwin/core-frontend";
+import {
+  IModelApp, IModelConnection, RenderDiagnostics, RenderSystem, TileAdmin,
+} from "@itwin/core-frontend";
+import { initializeFrontendTiles } from "@itwin/frontend-tiles";
 import { WebGLExtensionName } from "@itwin/webgl-compatibility";
 import { DtaBooleanConfiguration, DtaConfiguration, DtaNumberConfiguration, DtaStringConfiguration, getConfig } from "../common/DtaConfiguration";
 import { DtaRpcInterface } from "../common/DtaRpcInterface";
 import { DisplayTestApp } from "./App";
+import { MobileMessenger } from "./FileOpen";
 import { openIModel, OpenIModelProps } from "./openIModel";
 import { signIn } from "./signIn";
 import { Surface } from "./Surface";
@@ -70,7 +74,7 @@ const getFrontendConfig = async (useRPC = false) => {
   };
   Object.assign(configuration, configurationOverrides);
 
-  console.log("Configuration", JSON.stringify(configuration)); // eslint-disable-line no-console
+  console.log("Configuration", configuration); // eslint-disable-line no-console
 };
 
 async function openFile(props: OpenIModelProps): Promise<IModelConnection> {
@@ -85,8 +89,6 @@ function setConfigurationResults(): [renderSystemOptions: RenderSystem.Options, 
     disabledExtensions: configuration.disabledExtensions as WebGLExtensionName[],
     preserveShaderSourceCode: true === configuration.preserveShaderSourceCode,
     logarithmicDepthBuffer: false !== configuration.logarithmicZBuffer,
-    filterMapTextures: true === configuration.filterMapTextures,
-    filterMapDrapeTextures: false !== configuration.filterMapDrapeTextures,
     dpiAwareViewports: false !== configuration.dpiAwareViewports,
     devicePixelRatioOverride: configuration.devicePixelRatioOverride,
     dpiAwareLOD: true === configuration.dpiAwareLOD,
@@ -145,6 +147,23 @@ const dtaFrontendMain = async () => {
   // retrieve, set, and output the global configuration variable
   await getFrontendConfig();
 
+  if (configuration.useFrontendTiles) {
+    initializeFrontendTiles({
+      computeSpatialTilesetBaseUrl: async (iModel) => {
+        const url = new URL(`http://localhost:8080${iModel.key}-tiles/3dft/`);
+        try {
+          // See if a tileset has been published for this iModel.
+          const response = await fetch(`${url}tileset.json`);
+          await response.json();
+          return url;
+        } catch (_) {
+          // No tileset available.
+          return undefined;
+        }
+      },
+    });
+  }
+
   // Start the app. (This tries to fetch a number of localization json files from the origin.)
   let tileAdminProps: TileAdmin.Props;
   let renderSystemOptions: RenderSystem.Options;
@@ -191,8 +210,8 @@ const dtaFrontendMain = async () => {
       const writable = configuration.openReadWrite ?? false;
       iModel = await openFile({ fileName: iModelName, writable });
       if (ProcessDetector.isMobileAppFrontend) {
-        // attempt to send message to iOS code that the model was opened
-        (window as any).webkit?.messageHandlers?.modelOpened?.postMessage(iModelName);
+        // attempt to send message to mobile that the model was opened
+        MobileMessenger.postMessage("modelOpened", iModelName);
       }
       setTitle(iModel);
     } else {

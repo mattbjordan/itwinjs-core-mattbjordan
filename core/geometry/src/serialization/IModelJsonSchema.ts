@@ -7,11 +7,14 @@
  * @module Serialization
  */
 
+import { AkimaCurve3d } from "../bspline/AkimaCurve3d";
 import { BezierCurve3d } from "../bspline/BezierCurve3d";
 import { BezierCurve3dH } from "../bspline/BezierCurve3dH";
 import { BSplineCurve3d } from "../bspline/BSplineCurve";
 import { BSplineCurve3dH } from "../bspline/BSplineCurve3dH";
+import { BSplineCurveOps } from "../bspline/BSplineCurveOps";
 import { BSplineSurface3d, BSplineSurface3dH, WeightStyle } from "../bspline/BSplineSurface";
+import { InterpolationCurve3d as InterpolationCurve3d, InterpolationCurve3dProps } from "../bspline/InterpolationCurve3d";
 import { BSplineWrapMode } from "../bspline/KnotVector";
 import { Arc3d } from "../curve/Arc3d";
 import { CoordinateXYZ } from "../curve/CoordinateXYZ";
@@ -23,8 +26,9 @@ import { Loop } from "../curve/Loop";
 import { ParityRegion } from "../curve/ParityRegion";
 import { Path } from "../curve/Path";
 import { PointString3d } from "../curve/PointString3d";
-import { TransitionSpiral3d } from "../curve/spiral/TransitionSpiral3d";
+import { DirectSpiral3d } from "../curve/spiral/DirectSpiral3d";
 import { IntegratedSpiral3d } from "../curve/spiral/IntegratedSpiral3d";
+import { TransitionSpiral3d } from "../curve/spiral/TransitionSpiral3d";
 import { UnionRegion } from "../curve/UnionRegion";
 import { AngleProps, AngleSweepProps, AxisOrder, Geometry } from "../Geometry";
 import { Angle } from "../geometry3d/Angle";
@@ -41,6 +45,7 @@ import { YawPitchRollAngles, YawPitchRollProps } from "../geometry3d/YawPitchRol
 import { Point4d } from "../geometry4d/Point4d";
 import { AuxChannel, AuxChannelData, AuxChannelDataType, PolyfaceAuxData } from "../polyface/AuxData";
 import { IndexedPolyface } from "../polyface/Polyface";
+import { TaggedNumericData } from "../polyface/TaggedNumericData";
 import { Box } from "../solid/Box";
 import { Cone } from "../solid/Cone";
 import { LinearSweep } from "../solid/LinearSweep";
@@ -48,13 +53,8 @@ import { RotationalSweep } from "../solid/RotationalSweep";
 import { RuledSweep } from "../solid/RuledSweep";
 import { Sphere } from "../solid/Sphere";
 import { TorusPipe } from "../solid/TorusPipe";
-import { DirectSpiral3d } from "../curve/spiral/DirectSpiral3d";
-import { TaggedNumericData } from "../polyface/TaggedNumericData";
-import { InterpolationCurve3d as InterpolationCurve3d, InterpolationCurve3dProps } from "../bspline/InterpolationCurve3d";
-import { AkimaCurve3d } from "../bspline/AkimaCurve3d";
-import { BSplineCurveOps } from "../bspline/BSplineCurveOps";
+
 // cspell:word bagof
-/* eslint-disable no-console*/
 /**
  * `ImodelJson` namespace has classes for serializing and deserialization json objects
  * @public
@@ -391,7 +391,7 @@ export namespace IModelJson {
      * Now both native and TypeScript will output both and accept either, preferring "origin".
      * "baseOrigin" is undocumented in TypeScript; it's also "deprecated" so that the linter will warn to use the documented property instead.
      * @internal
-     * @deprecated use origin
+     * @deprecated in 3.x. use origin
      */
     baseOrigin?: XYZProps;
     /** base x size (required) */
@@ -464,7 +464,7 @@ export namespace IModelJson {
     /** primary radius  (elbow radius) */
     majorRadius: number;
     /** pipe radius */
-    minorRadius?: number;
+    minorRadius: number;
     /** sweep angle.
      * * if omitted, full 360 degree sweep.
      */
@@ -1208,8 +1208,8 @@ export namespace IModelJson {
       // optional specific X
       const radiusX = Reader.parseNumberProperty(json, "radiusX", radius);
       // missing Y and Z both pick up radiusX  (which may have already been defaulted from unqualified radius)
-      const radiusY = Reader.parseNumberProperty(json, "radiusX", radiusX);
-      const radiusZ = Reader.parseNumberProperty(json, "radiusX", radiusX);
+      const radiusY = Reader.parseNumberProperty(json, "radiusY", radiusX);
+      const radiusZ = Reader.parseNumberProperty(json, "radiusZ", radiusX);
       const latitudeStartEnd = Reader.parseAngleSweepProps(json, "latitudeStartEnd"); // this may be undefined!!
 
       const axes = Reader.parseOrientation(json, true)!;
@@ -1237,8 +1237,7 @@ export namespace IModelJson {
     }
     /** Parse TorusPipe props to TorusPipe instance. */
     public static parseTorusPipe(json?: TorusPipeProps): TorusPipe | undefined {
-
-      const axes = Reader.parseOrientation(json, true)!;
+      const axes = Reader.parseOrientation(json, true)!;  // force frame to be pure rotation (no scale or mirror)!
       const center = Reader.parsePoint3dProperty(json, "center");
       const radiusA = Reader.parseNumberProperty(json, "majorRadius");
       const radiusB = Reader.parseNumberProperty(json, "minorRadius");
@@ -1246,9 +1245,7 @@ export namespace IModelJson {
       const capped = Reader.parseBooleanProperty(json, "capped", false)!;
       if (center
         && radiusA !== undefined
-        && radiusB !== undefined
-      ) {
-
+        && radiusB !== undefined) {
         return TorusPipe.createDgnTorusPipe(center, axes.columnX(), axes.columnY(),
           radiusA, radiusB,
           sweepAngle ? sweepAngle : Angle.createDegrees(360), capped);
@@ -1557,13 +1554,13 @@ export namespace IModelJson {
 
     /** Convert strongly typed instance to tagged json */
     public handleTorusPipe(data: TorusPipe): any {
-
       const vectorX = data.cloneVectorX();
       const vectorY = data.cloneVectorY();
       const radiusA = data.getMajorRadius();
       const radiusB = data.getMinorRadius();
       const sweep = data.getSweepAngle();
       if (data.getIsReversed()) {
+        // the TorusPipe was created with negative sweep that was forced positive; restore original values
         vectorY.scaleInPlace(-1.0);
         sweep.setRadians(-sweep.radians);
       }
@@ -1578,7 +1575,6 @@ export namespace IModelJson {
         value.capped = data.capped;
       }
       return { torusPipe: value };
-
     }
 
     /** Convert strongly typed instance to tagged json */

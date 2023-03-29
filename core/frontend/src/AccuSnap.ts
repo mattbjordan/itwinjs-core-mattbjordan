@@ -6,7 +6,7 @@
  * @module LocatingElements
  */
 
-import { BeDuration } from "@itwin/core-bentley";
+import { BeDuration, Id64, Id64Arg, Id64Set } from "@itwin/core-bentley";
 import { CurveCurve, CurvePrimitive, GeometryQuery, IModelJson as GeomJson, Point2d, Point3d, Vector3d, XAndY } from "@itwin/core-geometry";
 import { SnapRequestProps } from "@itwin/core-common";
 import { ElementLocateManager, HitListHolder, LocateAction, LocateFilterStatus, LocateResponse, SnapStatus } from "./ElementLocateManager";
@@ -213,18 +213,15 @@ export class AccuSnap implements Decorator {
   public onInitialized() { }
   private get _searchDistance(): number { return this.isLocateEnabled ? 1.0 : this._settings.searchDistance; }
   private get _hotDistanceInches(): number { return IModelApp.locateManager.apertureInches * this._settings.hotDistanceFactor; }
-  /** Whether locate of elements under the cursor is enabled by the current InteractiveTool.
-   * @public
-   */
+  /** Whether locate of elements under the cursor is enabled by the current InteractiveTool. */
   public get isLocateEnabled(): boolean { return this.toolState.locate; }
-  /** Whether snapping to elements under the cursor is enabled by the current InteractiveTool.
-   * @public
-   */
+  /** Whether snapping to elements under the cursor is enabled by the current InteractiveTool. */
   public get isSnapEnabled(): boolean { return this.toolState.enabled; }
-  /** Whether the user setting for snapping is enabled. Snapping is done only when both the user and current InteractiveTool have enabled it.
-   * @public
-   */
+  /** Whether the user setting for snapping is enabled. Snapping is done only when both the user and current InteractiveTool have enabled it. */
   public get isSnapEnabledByUser(): boolean { return this._settings.enableFlag; }
+  /** AccuSnap user settings */
+  public get userSettings() { return this._settings; }
+
   private isFlashed(view: Viewport): boolean { return (this.areFlashed.has(view)); }
   private needsFlash(view: Viewport): boolean { return (this.needFlash.has(view)); }
   private setNeedsFlash(view: Viewport) {
@@ -242,6 +239,23 @@ export class AccuSnap implements Decorator {
   public get isHot(): boolean {
     const currSnap = this.getCurrSnapDetail();
     return !currSnap ? false : currSnap.isHot;
+  }
+
+  /** Optional ids to never flash. Useful for tools like "trim curve" that won't want a flashed segment to obscure a result preview.
+   * @note Cleared when a primitive or view tool is started and saved/restored when a primitive tool is suspended/unsuspended.
+   * @public
+   */
+  public neverFlash(ids?: Id64Arg): void {
+    if (undefined === ids) {
+      this.toolState.neverFlash = undefined;
+      return;
+    }
+
+    const newIds = new Set<string>();
+    for (const id of Id64.iterable(ids))
+      newIds.add(id);
+
+    this.toolState.neverFlash = (0 !== newIds.size ? newIds : undefined);
   }
 
   /** @internal */
@@ -522,7 +536,10 @@ export class AccuSnap implements Decorator {
       return false;
 
     if (hit.isModelHit || hit.isMapHit)
-      return false;       // Avoid annoying flashing of reality models.
+      return false; // Avoid annoying flashing of reality models.
+
+    if (this.toolState.neverFlash && this.toolState.neverFlash.has(hit.sourceId))
+      return false;
 
     const snap = AccuSnap.toSnapDetail(hit);
     return !snap || snap.isHot || this._settings.hiliteColdHits;
@@ -561,7 +578,10 @@ export class AccuSnap implements Decorator {
     return hit;
   }
 
-  private initCmdState() { this.toolState.suspended = 0; }
+  private initCmdState() {
+    this.toolState.suspended = 0;
+    this.toolState.neverFlash = undefined;
+  }
 
   /** @internal */
   public suspend(doSuspend: boolean) {
@@ -1036,8 +1056,13 @@ export class AccuSnap implements Decorator {
     }
 
     const hit = IModelApp.tentativePoint.getCurrSnap();
-    if (hit && !(hit.isModelHit || hit.isMapHit)) // Don't hilite reality models.
-      hit.draw(context);
+    if (!hit || hit.isModelHit || hit.isMapHit)
+      return; // Don't hilite reality models.
+
+    if (this.toolState.neverFlash && this.toolState.neverFlash.has(hit.sourceId))
+      return;
+
+    hit.draw(context);
   }
 
   /** @internal */
@@ -1143,10 +1168,12 @@ export namespace AccuSnap { // eslint-disable-line no-redeclare
     public enabled = false;
     public locate = false;
     public suspended = 0;
+    public neverFlash?: Id64Set;
     public setFrom(other: ToolState): void {
       this.enabled = other.enabled;
       this.locate = other.locate;
       this.suspended = other.suspended;
+      this.neverFlash = other.neverFlash;
     }
     public clone(): ToolState {
       const val = new ToolState();

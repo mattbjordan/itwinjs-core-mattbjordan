@@ -113,7 +113,21 @@ export class IpcApp {
     });
   }
 
-  /** @deprecated use [[appFunctionIpc]] */
+  /** Create a type safe Proxy object to call an IPC function on a of registered backend handler that accepts a "methodName" argument followed by optional arguments
+   * @param channelName the channel registered by the backend handler.
+   * @param functionName the function to call on the handler.
+   * @internal
+   */
+  public static makeIpcFunctionProxy<K>(channelName: string, functionName: string): PickAsyncMethods<K> {
+    return new Proxy({} as PickAsyncMethods<K>, {
+      get(_target, methodName: string) {
+        return async (...args: any[]) =>
+          IpcApp.callIpcChannel(channelName, functionName, methodName, ...args);
+      },
+    });
+  }
+
+  /** @deprecated in 3.x. use [[appFunctionIpc]] */
   public static async callIpcHost<T extends AsyncMethodsOf<IpcAppFunctions>>(methodName: T, ...args: Parameters<IpcAppFunctions[T]>) {
     return this.callIpcChannel(IpcAppChannel.Functions, methodName, ...args) as PromiseReturnType<IpcAppFunctions[T]>;
   }

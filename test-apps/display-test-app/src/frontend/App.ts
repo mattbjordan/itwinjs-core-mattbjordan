@@ -27,6 +27,7 @@ import { ToggleAspectRatioSkewDecoratorTool } from "./AspectRatioSkewDecorator";
 import { ApplyModelDisplayScaleTool } from "./DisplayScale";
 import { ApplyModelTransformTool } from "./DisplayTransform";
 import { GenerateElementGraphicsTool, GenerateTileContentTool } from "./TileContentTool";
+import { ViewClipByElementGeometryTool } from "./ViewClipByElementGeometryTool";
 import { DrawingAidTestTool } from "./DrawingAidTestTool";
 import { EditingScopeTool, PlaceLineStringTool } from "./EditingTools";
 import { FenceClassifySelectedTool } from "./Fence";
@@ -53,7 +54,11 @@ import { MacroTool } from "./MacroTools";
 import { TerrainDrapeTool } from "./TerrainDrapeTool";
 import { SaveImageTool } from "./SaveImageTool";
 import { BingTerrainMeshProvider } from "./BingTerrainProvider";
+import { AttachCustomRealityDataTool, registerRealityDataSourceProvider } from "./RealityDataProvider";
+import { MapLayersFormats } from "@itwin/map-layers-formats";
 import { OpenRealityModelSettingsTool } from "./RealityModelDisplaySettingsWidget";
+import { ElectronRendererAuthorization } from "@itwin/electron-authorization/lib/cjs/ElectronRenderer";
+import { ITwinLocalization } from "@itwin/core-i18n";
 
 class DisplayTestAppAccuSnap extends AccuSnap {
   private readonly _activeSnaps: SnapMode[] = [SnapMode.NearestKeypoint];
@@ -244,11 +249,16 @@ export class DisplayTestApp {
         ],
         /* eslint-disable @typescript-eslint/naming-convention */
         mapLayerOptions: {
-          MapboxImagery: configuration.mapBoxKey ? { key: "access_token", value: configuration.mapBoxKey } : undefined,
-          BingMaps: configuration.bingMapsKey ? { key: "key", value: configuration.bingMapsKey } : undefined,
+          MapboxImagery: configuration.mapBoxKey
+            ? { key: "access_token", value: configuration.mapBoxKey }
+            : undefined,
+          BingMaps: configuration.bingMapsKey
+            ? { key: "key", value: configuration.bingMapsKey }
+            : undefined,
         },
         /* eslint-enable @typescript-eslint/naming-convention */
         hubAccess: createHubAccess(configuration),
+        localization: new ITwinLocalization({ detectorOptions: { order: ["htmlTag"] } }),
       },
       localhostIpcApp: {
         socketUrl,
@@ -258,6 +268,12 @@ export class DisplayTestApp {
     this._iTwinId = configuration.iTwinId;
 
     if (ProcessDetector.isElectronAppFrontend) {
+      // The electron package produces an exception every time getAccessToken is called, which is quite frequently.
+      // It makes debugging with "pause on caught exceptions" infuriating.
+      // ###TODO fix that in the client and remove this
+      if (!configuration.noElectronAuth)
+        opts.iModelApp!.authorizationClient = new ElectronRendererAuthorization();
+
       await ElectronApp.startup(opts);
     } else if (ProcessDetector.isMobileAppFrontend) {
       await MobileApp.startup(opts as MobileAppOpts);
@@ -269,8 +285,8 @@ export class DisplayTestApp {
       }
 
       const rpcParams: BentleyCloudRpcParams = { info: { title: "ui-test-app", version: "v1.0" }, uriPrefix: configuration.customOrchestratorUri || "http://localhost:3001" };
-      if (opts.iModelApp?.rpcInterfaces)
-        BentleyCloudRpcManager.initializeClient(rpcParams, opts.iModelApp.rpcInterfaces);
+      if (opts.iModelApp?.rpcInterfaces) // eslint-disable-line deprecation/deprecation
+        BentleyCloudRpcManager.initializeClient(rpcParams, opts.iModelApp.rpcInterfaces); // eslint-disable-line deprecation/deprecation
       await LocalhostIpcApp.startup(opts);
     }
 
@@ -282,6 +298,7 @@ export class DisplayTestApp {
     [
       ApplyModelDisplayScaleTool,
       ApplyModelTransformTool,
+      AttachCustomRealityDataTool,
       ChangeGridSettingsTool,
       CloneViewportTool,
       CloseIModelTool,
@@ -327,6 +344,7 @@ export class DisplayTestApp {
       ToggleAspectRatioSkewDecoratorTool,
       TimePointComparisonTool,
       ToggleShadowMapTilesTool,
+      ViewClipByElementGeometryTool,
       ZoomToSelectedElementsTool,
     ].forEach((tool) => tool.register(svtToolNamespace));
 
@@ -334,9 +352,14 @@ export class DisplayTestApp {
 
     BingTerrainMeshProvider.register();
 
+    const realityApiKey = process.env.IMJS_REALITY_DATA_KEY;
+    if (realityApiKey)
+      registerRealityDataSourceProvider(realityApiKey);
+
     await FrontendDevTools.initialize();
     await HyperModeling.initialize();
-    await EditTools.initialize({ registerAllTools: true });
+    await EditTools.initialize();
+    MapLayersFormats.initialize();
   }
 
   public static setActiveSnapModes(snaps: SnapMode[]): void {
